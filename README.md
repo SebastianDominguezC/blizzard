@@ -36,10 +36,15 @@ The client side app simply sends automatic messages, where the server simply upd
 
 #### To run server
 
-No dependencies needed, cargo run will run everything
+```
+cargo run -p "multiplayer-server
+```
+
+You can also build the workspace first, then run the package:
 
 ```
-cargo run
+cargo build
+cargo run -p "multiplayer-client
 ```
 
 ## TCP client
@@ -57,7 +62,7 @@ All position changes are logged on the tcp multiplayer server (here no changes a
 Make sure to be running the multiplayer-server first!
 
 ```
-cargo run -p "multiplayer-server
+cargo run -p "multiplayer-client
 ```
 
 You can also build the workspace first, then run the package:
