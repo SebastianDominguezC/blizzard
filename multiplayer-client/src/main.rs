@@ -1,26 +1,11 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
+extern crate game;
 
+use game::game::Player;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;
 use std::thread;
 use std::time::Duration;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Player {
-    // #[serde(rename = "lolId")]
-    id: usize,
-    pos: Position,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Position {
-    x: i32,
-    y: i32,
-}
 
 fn main() {
     let mut stream = TcpStream::connect("127.0.0.1:8888").expect("Could not connect to server");
@@ -93,6 +78,8 @@ fn main() {
             .expect("Could not read into buffer");
 
         let json = str::from_utf8(&buffer).unwrap();
+
+        println!("{}", json);
 
         let player: Vec<Player> = serde_json::from_str(&json).unwrap();
 
