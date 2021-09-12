@@ -1,9 +1,11 @@
 extern crate game;
 
-use game::game::Player;
+use game::game::{Player, Position};
+use game::server::signal::Signal;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -13,47 +15,46 @@ impl Client {
     fn start() {
         let mut stream = TcpStream::connect("127.0.0.1:8888").expect("Could not connect to server");
         let port: i32;
-        loop {
-            let mut input = String::new();
-            let mut buffer: Vec<u8> = Vec::new();
 
-            println!("Enter your username: ");
+        let mut input = String::new();
+        let mut buffer: Vec<u8> = Vec::new();
 
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Failed to read from stdin");
+        println!("Enter your username: ");
 
-            println!("Finding an available lobby...");
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read from stdin");
 
-            stream
-                .write(input.as_bytes())
-                .expect("Failed to write to server");
+        println!("Finding an available lobby...");
 
-            let mut reader = BufReader::new(&stream);
+        stream
+            .write(input.as_bytes())
+            .expect("Failed to write to server");
 
-            reader
-                .read_until(b'\n', &mut buffer)
-                .expect("Could not read into buffer");
+        let mut reader = BufReader::new(&stream);
 
-            println!("Lobby found");
+        reader
+            .read_until(b'\n', &mut buffer)
+            .expect("Could not read into buffer");
 
-            println!(
-                "{}",
-                str::from_utf8(&buffer).expect("Could not write buffer as string")
-            );
+        println!("Lobby found");
 
-            port = str::from_utf8(&buffer)
-                .expect("Could not write buffer as string")
-                .replace("\n", "")
-                .parse()
-                .expect("Could not parse port");
+        println!(
+            "{}",
+            str::from_utf8(&buffer).expect("Could not write buffer as string")
+        );
 
-            if port == 0 {
-                println!("No game available, please try again later");
-                return;
-            }
-            break;
+        port = str::from_utf8(&buffer)
+            .expect("Could not write buffer as string")
+            .replace("\n", "")
+            .parse()
+            .expect("Could not parse port");
+
+        if port == 0 {
+            println!("No game available, please try again later");
+            return;
         }
+
         stream
             .shutdown(Shutdown::Both)
             .expect("Could not disconnect from original server");
@@ -65,22 +66,73 @@ impl Client {
 
     fn run_game(tcp: String) {
         let mut stream = TcpStream::connect(tcp).expect("Could not connect to server");
+        let stream_clone = stream.try_clone().unwrap();
 
-        loop {
-            let mut buffer: Vec<u8> = Vec::new();
-            let input = String::from("Game is starting...");
-            thread::sleep(Duration::from_millis(1000));
-            stream
-                .write(input.as_bytes())
-                .expect("Failed to write to server");
-            let mut reader = BufReader::new(&stream);
-            reader
-                .read_until(b'\n', &mut buffer)
-                .expect("Could not read into buffer");
-            let json = str::from_utf8(&buffer).unwrap();
-            let players: Vec<Player> = serde_json::from_str(&json).unwrap();
-            println!("{:?}", players);
-        }
+        let position = Arc::new(Mutex::new(Position::new()));
+        let position1 = Arc::clone(&position);
+        let position2 = Arc::clone(&position);
+
+        // Input
+        std::thread::spawn(move || {
+            let pos = Arc::clone(&position1);
+            loop {
+                let mut input = String::new();
+
+                io::stdin()
+                    .read_line(&mut input)
+                    .expect("Failed to read from stdin");
+                let mut pos = pos.lock().unwrap();
+
+                let input = input.trim();
+                let data: Position;
+
+                if input == "w" {
+                    data = Position::up();
+                } else if input == "a" {
+                    data = Position::left();
+                } else if input == "s" {
+                    data = Position::down();
+                } else if input == "d" {
+                    data = Position::right();
+                } else {
+                    data = Position::new();
+                }
+                *pos = data;
+            }
+        });
+
+        // Sender
+        std::thread::spawn(move || {
+            let pos = Arc::clone(&position2);
+            loop {
+                let pos = *pos.lock().unwrap();
+                let data = Signal::MovePlayer(pos);
+                let json = serde_json::to_string(&data).unwrap() + "\n";
+
+                stream
+                    .write(json.as_bytes())
+                    .expect("Failed to write to server");
+                thread::sleep(Duration::from_secs(1));
+            }
+        });
+
+        // Output
+        std::thread::spawn(move || {
+            let stream = stream_clone;
+            loop {
+                let mut buffer: Vec<u8> = Vec::new();
+                let mut reader = BufReader::new(&stream);
+                reader
+                    .read_until(b'\n', &mut buffer)
+                    .expect("Could not read into buffer");
+                let json = str::from_utf8(&buffer).unwrap();
+                let players: Vec<Player> = serde_json::from_str(&json).unwrap();
+                println!("{:?}", players);
+            }
+        });
+
+        // Keep thread alive, so TCP connection on other threads doesn't reset
+        loop {}
     }
 }
 
