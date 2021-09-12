@@ -2,11 +2,13 @@ mod game_wrapper;
 mod player;
 mod position;
 
+use crate::server::signal::Signal;
 pub use game_wrapper::GameWrapper;
 pub use player::Player;
 pub use position::Position;
-use std::io::{Error, Read, Write};
+use std::io::{BufRead, BufReader, Error, Write};
 use std::net::{TcpListener, TcpStream};
+use std::str;
 use std::thread;
 use uid::Uid;
 
@@ -35,11 +37,15 @@ impl Game {
         id: usize,
     ) -> Result<(), Error> {
         println!("Incoming connection from: {}", stream.peer_addr()?);
-        let mut buf = [0; 512];
+        let buf = [0; 512];
 
         loop {
-            // Read client
-            let bytes_read = stream.read(&mut buf)?;
+            let mut buffer: Vec<u8> = Vec::new();
+            let mut reader = BufReader::new(&stream);
+            reader
+                .read_until(b'\n', &mut buffer)
+                .expect("Could not read into buffer");
+            let bytes_read = buffer.len();
 
             // On stream input, aquire game lock and move player
             let mut game = game.lock().unwrap();
@@ -55,8 +61,19 @@ impl Game {
                 return Ok(());
             }
 
-            let player = &mut game.players[index];
-            player.move_player();
+            let json = str::from_utf8(&buffer).unwrap();
+
+            let signal: Signal = serde_json::from_str(&json.trim()).unwrap();
+
+            match signal {
+                Signal::MovePlayer(pos) => {
+                    let player = &mut game.players[index];
+                    player.move_player(pos.x, pos.y);
+                }
+                _ => {
+                    println!("Some other shit");
+                }
+            }
 
             let serialized = serde_json::to_string(&game.players);
             // Print new position

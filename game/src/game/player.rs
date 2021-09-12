@@ -15,7 +15,7 @@ impl Player {
         }
     }
 
-    pub fn move_player(&mut self) {
-        self.pos.displace_unit();
+    pub fn move_player(&mut self, x: i32, y: i32) {
+        self.pos.displace(x, y);
     }
 }
