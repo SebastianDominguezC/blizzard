@@ -4,6 +4,7 @@ mod position;
 
 pub use game_wrapper::GameWrapper;
 pub use player::Player;
+pub use position::Position;
 use std::io::{Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
@@ -42,6 +43,9 @@ impl Game {
 
             // On stream input, aquire game lock and move player
             let mut game = game.lock().unwrap();
+
+            // Get data from game
+            let game_id = game.id;
             let index = game.players.iter().position(|p| p.id == id).unwrap();
 
             // If no bytes end connection
@@ -51,11 +55,8 @@ impl Game {
                 return Ok(());
             }
 
-            let game_id = game.id;
-            {
-                let player = &mut game.players[index];
-                player.move_player();
-            }
+            let player = &mut game.players[index];
+            player.move_player();
 
             let serialized = serde_json::to_string(&game.players);
             // Print new position

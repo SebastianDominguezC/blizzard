@@ -13,3 +13,4 @@ extern crate serde_json;
 extern crate uid;
 
 pub mod game;
+pub mod server;

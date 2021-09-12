@@ -19,7 +19,6 @@ impl Uid {
             // Exclusive range
             let int: u32 = rng.gen_range(0..10);
             let base = u32::pow(10, i);
-            println!("{}", base);
             id += base * int;
         }
         id

@@ -10,7 +10,11 @@ impl Position {
     }
 
     pub fn displace_unit(&mut self) {
-        self.x += 1;
-        self.y += 1;
+        self.displace(1, 1);
+    }
+
+    pub fn displace(&mut self, x: i32, y: i32) {
+        self.x += x;
+        self.y += y;
     }
 }
