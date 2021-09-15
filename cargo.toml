@@ -1,8 +1,8 @@
 [workspace]
 
 members = [
+    "server",
     "multiplayer-server",
     "multiplayer-client",
-    "game",
     "uid",
 ]

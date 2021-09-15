@@ -1,8 +1,8 @@
-use super::Game;
+use super::game_connection::GameConnection;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-pub struct GameWrapper {
+pub struct ConnectionWrapper {
     player_count: usize,
     max_players: i32,
     game_started: bool,
@@ -10,10 +10,10 @@ pub struct GameWrapper {
     pub port: i32,
 }
 
-impl GameWrapper {
-    pub fn new(id: usize, port: i32, max_players: i32) -> Arc<Mutex<GameWrapper>> {
+impl ConnectionWrapper {
+    pub fn new(id: usize, port: i32, max_players: i32) -> Arc<Mutex<ConnectionWrapper>> {
         // Create game wrapper
-        let game_wrapper = GameWrapper {
+        let game_wrapper = ConnectionWrapper {
             player_count: 0,
             game_started: false,
             id,
@@ -32,7 +32,7 @@ impl GameWrapper {
             println!("Running game in port {}", port);
 
             // Run a game
-            Game::run_game(port, max_players, wrapper_clone);
+            GameConnection::connect_to_game(port, max_players, wrapper_clone);
         });
 
         return game_wrapper;

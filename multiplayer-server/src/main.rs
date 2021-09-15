@@ -1,6 +1,6 @@
-extern crate game;
+extern crate server;
 
-use game::server::Server;
+use server::server::Server;
 
 fn main() {
     Server::new(8888, 4, 2);

@@ -1,5 +1,8 @@
-mod game_pool;
 pub mod signal;
+
+mod connection_wrapper;
+mod game_connection;
+mod game_pool;
 
 use game_pool::GamePool;
 use std::io::{Error, Read, Write};

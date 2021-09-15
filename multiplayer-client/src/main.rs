@@ -1,19 +1,18 @@
-extern crate game;
+extern crate server;
 
-use game::game::{Player, Position};
-use game::server::signal::Signal;
+use server::game::{Player, Position};
+use server::server::signal::Signal;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
 
 struct Client {}
 
 impl Client {
     fn start() {
-        let mut stream = TcpStream::connect("127.0.0.1:8888").expect("Could not connect to server");
+        let mut stream = TcpStream::connect("0.0.0.0:8888").expect("Could not connect to server");
         let port: i32;
 
         let mut input = String::new();
@@ -59,7 +58,7 @@ impl Client {
             .shutdown(Shutdown::Both)
             .expect("Could not disconnect from original server");
 
-        let tcp = format!("127.0.0.1:{}", port);
+        let tcp = format!("0.0.0.0:{}", port);
 
         Client::run_game(tcp);
     }
@@ -70,10 +69,9 @@ impl Client {
 
         let position = Arc::new(Mutex::new(Position::new()));
         let position1 = Arc::clone(&position);
-        let position2 = Arc::clone(&position);
 
-        // Input
-        std::thread::spawn(move || {
+        // User Input
+        thread::spawn(move || {
             let pos = Arc::clone(&position1);
             loop {
                 let mut input = String::new();
@@ -98,26 +96,19 @@ impl Client {
                     data = Position::new();
                 }
                 *pos = data;
-            }
-        });
 
-        // Sender
-        std::thread::spawn(move || {
-            let pos = Arc::clone(&position2);
-            loop {
-                let pos = *pos.lock().unwrap();
-                let data = Signal::MovePlayer(pos);
+                let data = Signal::MovePlayer(*pos);
                 let json = serde_json::to_string(&data).unwrap() + "\n";
 
                 stream
                     .write(json.as_bytes())
                     .expect("Failed to write to server");
-                thread::sleep(Duration::from_secs(1));
+                println!("data written");
             }
         });
 
-        // Output
-        std::thread::spawn(move || {
+        // Stream Reader
+        thread::spawn(move || {
             let stream = stream_clone;
             loop {
                 let mut buffer: Vec<u8> = Vec::new();

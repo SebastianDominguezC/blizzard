@@ -9,16 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "game"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_derive",
- "serde_json",
- "uid",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -45,20 +35,20 @@ checksum = "3cb00336871be5ed2c8ed44b60ae9959dc5b9f08539422ed43f09e34ecaeba21"
 name = "multiplayer-client"
 version = "0.1.0"
 dependencies = [
- "game",
  "serde",
  "serde_derive",
  "serde_json",
+ "server",
 ]
 
 [[package]]
 name = "multiplayer-server"
 version = "0.1.0"
 dependencies = [
- "game",
  "serde",
  "serde_derive",
  "serde_json",
+ "server",
 ]
 
 [[package]]
@@ -157,6 +147,16 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "uid",
 ]
 
 [[package]]
