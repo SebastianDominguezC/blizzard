@@ -6,6 +6,8 @@ mod tests {
     }
 }
 
-pub fn some_logic() {
-    println!("Engine logic!");
+mod core;
+
+pub fn main() {
+    core::entry_point::main();
 }
