@@ -1,10 +1,11 @@
 pub mod signal;
 
-mod connection_wrapper;
-mod game_connection;
-mod game_pool;
+mod connector;
+mod controller;
+mod pool;
 
-use game_pool::GamePool;
+use engine;
+use pool::Pool;
 use std::io::{Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
 
@@ -12,8 +13,11 @@ pub struct Server {}
 
 impl Server {
     pub fn new(port: i32, max_games: i32, max_players: i32) {
+        // Checking engine code runs here
+        engine::some_logic();
+
         // Create game pool
-        let game_pool = GamePool::new(max_games, max_players);
+        let game_pool = Pool::new(max_games, max_players);
 
         let tcp = format!("0.0.0.0:{}", port);
 

@@ -37,14 +37,14 @@ The client side app simply sends automatic messages, where the server simply upd
 #### To run server
 
 ```
-cargo run -p "multiplayer-server
+cargo run -p "multiplayer-server"
 ```
 
 You can also build the workspace first, then run the package:
 
 ```
 cargo build
-cargo run -p "multiplayer-client
+cargo run -p "multiplayer-server"
 ```
 
 ## TCP client
@@ -62,12 +62,19 @@ All position changes are logged on the tcp multiplayer server (here no changes a
 Make sure to be running the multiplayer-server first!
 
 ```
-cargo run -p "multiplayer-client
+cargo run -p "multiplayer-client"
 ```
 
 You can also build the workspace first, then run the package:
 
 ```
 cargo build
-cargo run -p "multiplayer-client
+cargo run -p "multiplayer-client"
 ```
+
+## Development road
+
+- A modular Game Engine that supports networking
+- ECS system
+- Server can run game engine parts
+- Client can run full game engine parts as needed

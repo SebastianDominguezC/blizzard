@@ -1,5 +1,5 @@
 use crate::game::Player;
-use crate::server::connection_wrapper::ConnectionWrapper;
+use crate::server::connector::Connector;
 use crate::server::signal::Signal;
 
 use std::io::{BufRead, BufReader, Error, Write};
@@ -11,41 +11,31 @@ use uid::Uid;
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
-pub struct GameConnection {
+pub struct Controller {
+    port: i32,
+    connector: Arc<Mutex<Connector>>,
     players: Vec<Player>,
     max_players: i32,
-    id: i32,
-    wrapper_ref: Arc<Mutex<ConnectionWrapper>>,
 }
 
-impl GameConnection {
-    fn new(
-        id: i32,
-        max_players: i32,
-        game_wrapper: Arc<Mutex<ConnectionWrapper>>,
-    ) -> GameConnection {
-        GameConnection {
+impl Controller {
+    fn new(port: i32, max_players: i32, connector: Arc<Mutex<Connector>>) -> Controller {
+        Controller {
             players: vec![],
             max_players,
-            id,
-            wrapper_ref: game_wrapper,
+            port,
+            connector,
         }
     }
 
-    pub fn connect_to_game(
-        port: i32,
-        max_players: i32,
-        game_wrapper: Arc<Mutex<ConnectionWrapper>>,
-    ) {
-        // Create game mutex with reference counter
-        let game = Arc::new(Mutex::new(GameConnection::new(
-            port,
-            max_players,
-            game_wrapper,
-        )));
+    pub fn open_game_port(port: i32, max_players: i32, connector: Arc<Mutex<Connector>>) {
+        // Create controller mutex with reference counter
+        let controller = Arc::new(Mutex::new(Controller::new(port, max_players, connector)));
 
         // Format port
         let port = format!("0.0.0.0:{}", port);
+
+        println!("Opening game in port {}", port);
 
         // Create tcp listener
         let listener = TcpListener::bind(port).expect("Could not bind");
@@ -57,23 +47,24 @@ impl GameConnection {
                 }
                 Ok(mut stream) => {
                     // Push a new player to the game
-                    let (could_join, player_id) = game.lock().unwrap().add_player();
+                    let (could_join, player_id) = controller.lock().unwrap().add_player();
 
                     if could_join {
-                        // Clone the game
-                        let game = Arc::clone(&game);
+                        // Clone the controller
+                        let controller = Arc::clone(&controller);
 
                         // Update game wrapper player count
-                        game.lock()
+                        controller
+                            .lock()
                             .unwrap()
-                            .wrapper_ref
+                            .connector
                             .lock()
                             .unwrap()
                             .add_player();
 
-                        // Spawn thread and move thread and game
+                        // Spawn thread and move thread and controller
                         thread::spawn(move || {
-                            GameConnection::connect_player(stream, game, player_id)
+                            Controller::connect_player(stream, controller, player_id)
                                 .unwrap_or_else(|error| eprintln!("{:?}", error));
                         });
                     } else {
@@ -86,7 +77,7 @@ impl GameConnection {
 
     pub fn connect_player(
         stream: TcpStream,
-        game: Arc<Mutex<GameConnection>>,
+        game: Arc<Mutex<Controller>>,
         id: usize,
     ) -> Result<(), Error> {
         println!("Connecting player {} to game", id);
@@ -112,7 +103,7 @@ impl GameConnection {
 
                 // If no bytes end connection
                 if bytes_read == 0 {
-                    game.wrapper_ref.lock().unwrap().remove_player();
+                    game.connector.lock().unwrap().remove_player();
                     game.remove_player(index);
                     break;
                 }
@@ -120,7 +111,7 @@ impl GameConnection {
                 let json = str::from_utf8(&buffer).unwrap();
                 let signal: Signal = serde_json::from_str(&json.trim()).unwrap();
 
-                GameConnection::handle_signal(signal, game, index);
+                Controller::handle_signal(signal, game, index);
             }
         });
 
@@ -128,7 +119,7 @@ impl GameConnection {
         thread::spawn(move || {
             let game = game_clone;
             loop {
-                thread::sleep(Duration::from_millis(30));
+                thread::sleep(Duration::from_millis(1000));
 
                 // On stream input, aquire game lock and move player
                 let game = game.lock().unwrap();
@@ -146,11 +137,7 @@ impl GameConnection {
         return Ok(());
     }
 
-    pub fn handle_signal(
-        signal: Signal,
-        mut game: MutexGuard<GameConnection>,
-        player_index: usize,
-    ) {
+    pub fn handle_signal(signal: Signal, mut game: MutexGuard<Controller>, player_index: usize) {
         match signal {
             Signal::MovePlayer(pos) => {
                 let player = &mut game.players[player_index];

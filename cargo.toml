@@ -5,4 +5,5 @@ members = [
     "multiplayer-server",
     "multiplayer-client",
     "uid",
+    "engine"
 ]
