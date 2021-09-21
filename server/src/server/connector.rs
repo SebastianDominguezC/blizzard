@@ -17,7 +17,6 @@ impl Connector {
             max_players,
         };
 
-        // Wrap in arc mutex
         let game_connector = Arc::new(Mutex::new(game_connector));
 
         // Clone game connector for game controller

@@ -1,6 +1,6 @@
-extern crate server;
+extern crate blizzard_server;
 
-use server::server::Server;
+use blizzard_server::server::Server;
 
 fn main() {
     Server::new(8888, 4, 4);

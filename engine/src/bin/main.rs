@@ -1,5 +1,5 @@
-extern crate engine;
+extern crate blizzard_engine;
 
 fn main() {
-    engine::main();
+    blizzard_engine::main();
 }

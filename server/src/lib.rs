@@ -8,7 +8,7 @@ mod tests {
 
 #[macro_use]
 extern crate serde_derive;
-extern crate engine;
+extern crate blizzard_engine;
 extern crate serde;
 extern crate serde_json;
 extern crate uid;

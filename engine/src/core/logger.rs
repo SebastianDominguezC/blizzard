@@ -38,32 +38,38 @@ fn log_output(log_level: LogLevel, message: String) {
     }
 }
 
-pub fn log_fatal(message: String) {
+pub fn fatal(message: String) {
     log_output(Fatal, message);
 }
 
-pub fn log_error(message: String) {
+pub fn error(message: String) {
     log_output(Error, message);
 }
 
-pub fn log_warning(message: String) {
+pub fn warn(message: String) {
     log_output(Warn, message);
 }
 
-pub fn log_info(message: String) {
+pub fn info(message: String) {
     log_output(Info, message);
 }
 
-pub fn log_debug(message: String) {
+pub fn debug(message: String) {
     log_output(Debug, message);
 }
 
-pub fn log_trace(message: String) {
+pub fn trace(message: String) {
     log_output(Trace, message);
 }
 
-pub fn initalize_logging() {
+pub fn initialize_logging() {
     // TODO: create log file
+    fatal("Fatal stuff".to_string());
+    error("Error stuff".to_string());
+    warn("Warning stuff".to_string());
+    info("Info stuff".to_string());
+    debug("Debug stuff".to_string());
+    trace("Trace stuff".to_string());
 }
 
 pub fn shutdown() {

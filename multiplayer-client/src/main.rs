@@ -1,7 +1,7 @@
-extern crate server;
+extern crate blizzard_server;
 
-use server::game::{Player, Position};
-use server::server::signal::Signal;
+use blizzard_server::game::{Player, Position};
+use blizzard_server::server::signal::Signal;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;

@@ -1,43 +1,58 @@
-use crate::core::logger::{
-    initalize_logging, log_debug, log_error, log_fatal, log_info, log_trace, log_warning,
-};
+use crate::core::logger::initialize_logging;
+use crate::game::Game;
+use uid::Uid;
+
+use std::thread;
+use std::time::{Duration, Instant};
 
 pub struct Application {
-    is_running: bool,
+    pub is_running: bool,
     is_suspended: bool,
-    last_time: f64,
+    last_time: Instant,
+    frames_per_second: Duration,
+    game: Game,
 }
 
 impl Application {
     pub fn create() -> Application {
         // Start logging
-        initalize_logging();
-
-        // TODO: remove
-        log_fatal("Fatal stuff".to_string());
-        log_error("Error stuff".to_string());
-        log_warning("Warning stuff".to_string());
-        log_info("Info stuff".to_string());
-        log_debug("Debug stuff".to_string());
-        log_trace("Trace stuff".to_string());
+        initialize_logging();
 
         // Return app
         Application {
             is_running: false,
             is_suspended: false,
-            last_time: 0.0,
+            last_time: Instant::now(),
+            frames_per_second: Duration::from_millis(1000 / 2), // 1000 / millis = frames per sec
+            game: Game::initialize(),
         }
     }
-    pub fn run(&mut self) {
-        // Some game loop logic
+    pub fn start(&mut self) {
         self.is_running = true;
 
+        // game configuration
+        self.game.world_config();
+
+        // game loop
         while self.is_running {
-            self.last_time += 1.0;
-            println!("{}", self.last_time);
-            if self.last_time >= 20.0 {
-                self.is_running = false;
-            }
+            // initial time
+            self.last_time = Instant::now();
+
+            // process input
+            let random_input = Uid::new_numerical(1);
+
+            // update
+            self.game.update(random_input);
+
+            // render
+
+            // self.last_time += 1.0;
+            let sleep_time = self.frames_per_second - self.last_time.elapsed();
+            println!("{:?}", sleep_time);
+            thread::sleep(sleep_time);
+
+            // End the game
+            self.is_running = !self.game.end_game();
         }
     }
 }
