@@ -1,20 +1,21 @@
 use crate::core::logger::initialize_logging;
 use crate::game::Game;
+
 use uid::Uid;
 
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub struct Application {
+pub struct Application<T: Game> {
     pub is_running: bool,
     is_suspended: bool,
     last_time: Instant,
     frames_per_second: Duration,
-    game: Game,
+    game: T,
 }
 
-impl Application {
-    pub fn create() -> Application {
+impl<T: Game> Application<T> {
+    pub fn create(game: T) -> Application<T> {
         // Start logging
         initialize_logging();
 
@@ -24,7 +25,7 @@ impl Application {
             is_suspended: false,
             last_time: Instant::now(),
             frames_per_second: Duration::from_millis(1000 / 2), // 1000 / millis = frames per sec
-            game: Game::initialize(),
+            game,
         }
     }
     pub fn start(&mut self) {
@@ -48,7 +49,6 @@ impl Application {
 
             // self.last_time += 1.0;
             let sleep_time = self.frames_per_second - self.last_time.elapsed();
-            println!("{:?}", sleep_time);
             thread::sleep(sleep_time);
 
             // End the game

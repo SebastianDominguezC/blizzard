@@ -14,7 +14,6 @@ pub struct Server {}
 impl Server {
     pub fn new(port: i32, max_games: i32, max_players: i32) {
         // Checking engine code runs here
-        bz::main();
 
         // Create game pool
         let game_pool = Pool::new(max_games, max_players);

@@ -7,9 +7,11 @@ mod tests {
 }
 extern crate uid;
 mod core;
-mod ecs;
-mod game;
+pub mod ecs;
+pub mod game;
 
-pub fn main() {
-    core::entry_point::main();
+use game::Game;
+
+pub fn start<T: Game>(game: T) {
+    core::entry_point::run(game);
 }
