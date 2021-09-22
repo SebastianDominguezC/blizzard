@@ -1,10 +1,13 @@
 [package]
-name = "blizzard-engine"
+name = "blizzard-engine_derive"
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate_type = ["proc-macro"]
+
 [dependencies]
-uid = { path = "../uid" }
-blizzard-engine_derive = { path = "./engine_derive" }
+syn = "1.0"
+quote = "1.0"

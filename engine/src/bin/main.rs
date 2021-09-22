@@ -1,6 +1,9 @@
 extern crate blizzard_engine;
+extern crate blizzard_engine_derive;
+
 use blizzard_engine::ecs::{ComponentRegistry, EntityManager, World};
 use blizzard_engine::game::Game;
+use blizzard_engine_derive::ComponentRegistry;
 use std::collections::HashMap;
 
 // World
@@ -9,6 +12,7 @@ struct MyWorld {
     entity_manager: EntityManager,
     position: PositionRegistry,
     counters: CounterRegistry,
+    others: OtherRegistry,
 }
 
 impl World for MyWorld {
@@ -17,38 +21,27 @@ impl World for MyWorld {
             entity_manager: EntityManager::new(),
             position: PositionRegistry::new(),
             counters: CounterRegistry::new(),
+            others: OtherRegistry::new(),
         }
     }
     fn run_systems(&mut self) {
-        position_system(&mut self.position.positions);
-        counter_system(&mut self.counters.counters)
+        position_system(&mut self.position.components);
+        counter_system(&mut self.counters.components);
+        other_system(&mut self.others.components);
     }
 }
 
-// Components
-#[derive(Debug)]
+#[derive(ComponentRegistry, Debug)]
+struct OtherRegistry {
+    components: HashMap<u32, i32>,
+}
+
+#[derive(ComponentRegistry, Debug)]
 struct PositionRegistry {
-    positions: HashMap<u32, Position>,
+    components: HashMap<u32, Position>,
 }
 
-impl ComponentRegistry<Position> for PositionRegistry {
-    fn new() -> Self {
-        Self {
-            positions: HashMap::new(),
-        }
-    }
-    fn add(&mut self, entity: u32, position: Position) {
-        self.positions.insert(entity, position);
-    }
-    fn remove(&mut self, entity: u32) {
-        self.positions.remove(&entity);
-    }
-    fn get(&self, entity: u32) -> Option<&Position> {
-        self.positions.get(&entity)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Position {
     x: i32,
     y: i32,
@@ -64,26 +57,9 @@ impl Position {
     }
 }
 
-#[derive(Debug)]
+#[derive(ComponentRegistry, Debug)]
 struct CounterRegistry {
-    counters: HashMap<u32, i32>,
-}
-
-impl ComponentRegistry<i32> for CounterRegistry {
-    fn new() -> Self {
-        Self {
-            counters: HashMap::new(),
-        }
-    }
-    fn add(&mut self, entity: u32, counter: i32) {
-        self.counters.insert(entity, counter);
-    }
-    fn remove(&mut self, entity: u32) {
-        self.counters.remove(&entity);
-    }
-    fn get(&self, entity: u32) -> Option<&i32> {
-        self.counters.get(&entity)
-    }
+    components: HashMap<u32, i32>,
 }
 
 // Systems
@@ -95,7 +71,13 @@ fn position_system(positions: &mut HashMap<u32, Position>) {
 
 fn counter_system(counters: &mut HashMap<u32, i32>) {
     for (_, counter) in counters.iter_mut() {
-        *counter += 1;
+        *counter *= 2;
+    }
+}
+
+fn other_system(others: &mut HashMap<u32, i32>) {
+    for (_, other) in others.iter_mut() {
+        *other -= 1;
     }
 }
 
@@ -114,9 +96,19 @@ impl Game for MyGame {
 
         // Add components
         self.world.position.add(ent1, Position::new());
-        self.world.counters.add(ent2, 1);
         self.world.position.add(ent3, Position::new());
-        self.world.counters.add(ent3, 0);
+
+        self.world.counters.add(ent2, 1);
+        self.world.counters.add(ent3, 1);
+
+        self.world.others.add(ent1, 0);
+
+        // Create multiple entities
+        let entities = self.world.entity_manager.create_n_entities(2);
+
+        // Add components to many entities
+        self.world.counters.add_many(&entities, 1);
+        self.world.position.add_many(&entities, Position::new());
     }
 
     fn update(&mut self, input: u32) {

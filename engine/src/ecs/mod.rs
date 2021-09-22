@@ -30,6 +30,15 @@ impl EntityManager {
         id
     }
 
+    pub fn create_n_entities(&mut self, n: i32) -> Vec<u32> {
+        let mut entities = vec![];
+        for _ in 0..n {
+            let entity = self.create_entity();
+            entities.push(entity);
+        }
+        entities
+    }
+
     pub fn get_all(&self) -> &HashMap<u32, bool> {
         &self.entities
     }
@@ -59,12 +68,7 @@ impl EntityManager {
 pub trait ComponentRegistry<T> {
     fn new() -> Self;
     fn add(&mut self, entity: u32, component: T);
+    fn add_many(&mut self, entities: &Vec<u32>, component: T);
     fn remove(&mut self, entity: u32);
     fn get(&self, entity: u32) -> Option<&T>;
-}
-
-// System definition
-pub trait System<T> {
-    fn new() -> Self;
-    fn update(&self, components: &mut HashMap<u32, T>);
 }

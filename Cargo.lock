@@ -6,7 +6,16 @@ version = 3
 name = "blizzard-engine"
 version = "0.1.0"
 dependencies = [
+ "blizzard-engine_derive",
  "uid",
+]
+
+[[package]]
+name = "blizzard-engine_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
