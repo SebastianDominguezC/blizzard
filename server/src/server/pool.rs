@@ -1,5 +1,7 @@
 use crate::server::connector::Connector;
-
+use blizzard_engine::core::application::create_app;
+use blizzard_engine::game::Game;
+use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
 pub struct Pool {
@@ -7,7 +9,11 @@ pub struct Pool {
 }
 
 impl Pool {
-    pub fn new(max_games: i32, max_players: i32) -> Pool {
+    pub fn new<T: Game<K>, K>(max_games: i32, max_players: i32, game: T, shared_state: K) -> Pool
+    where
+        T: Clone + Send + 'static,
+        K: Copy + Send + Serialize + 'static,
+    {
         // Game wrapper vec
         let mut game_connectors = vec![];
 
@@ -16,8 +22,11 @@ impl Pool {
             // Create port id
             let port = 7000 + i;
 
+            // Create a new app for each port specified
+            let app = create_app(game.clone(), shared_state);
+
             // Push game connector
-            game_connectors.push(Connector::new(port, max_players));
+            game_connectors.push(Connector::new(port, max_players, app));
         }
 
         // Return game pool

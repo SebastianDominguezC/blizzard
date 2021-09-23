@@ -23,6 +23,7 @@ name = "blizzard-server"
 version = "0.1.0"
 dependencies = [
  "blizzard-engine",
+ "blizzard-engine_derive",
  "rand",
  "serde",
  "serde_derive",
@@ -73,6 +74,8 @@ dependencies = [
 name = "multiplayer-server"
 version = "0.1.0"
 dependencies = [
+ "blizzard-engine",
+ "blizzard-engine_derive",
  "blizzard-server",
  "serde",
  "serde_derive",

@@ -5,6 +5,7 @@ use blizzard_engine::ecs::{ComponentRegistry, EntityManager, World};
 use blizzard_engine::game::Game;
 use blizzard_engine_derive::ComponentRegistry;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 // World
 #[derive(Debug)]
@@ -87,7 +88,7 @@ struct MyGame {
     counter: u32,
 }
 
-impl Game for MyGame {
+impl Game<i32> for MyGame {
     fn world_config(&mut self) {
         // Create Entities
         let ent1 = self.world.entity_manager.create_entity();
@@ -111,7 +112,7 @@ impl Game for MyGame {
         self.world.position.add_many(&entities, Position::new());
     }
 
-    fn update(&mut self, input: u32) {
+    fn update(&mut self, _: i32, _: Arc<Mutex<i32>>) {
         self.world.run_systems();
         self.counter += 1;
         println!("{:#?}", self.world);
@@ -124,7 +125,7 @@ impl Game for MyGame {
     }
 }
 
-fn new_game(world: MyWorld) -> impl Game {
+fn new_game(world: MyWorld) -> impl Game<i32> {
     MyGame {
         counter: 0,
         world: world,
@@ -133,5 +134,6 @@ fn new_game(world: MyWorld) -> impl Game {
 
 fn main() {
     let game = new_game(MyWorld::new());
-    blizzard_engine::start(game);
+
+    blizzard_engine::start(game, 0);
 }

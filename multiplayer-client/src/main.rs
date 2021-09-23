@@ -1,6 +1,7 @@
 extern crate blizzard_server;
 
-use blizzard_server::game::{Player, Position};
+use blizzard_server::game::Position;
+use blizzard_server::server::controller::SharedState;
 use blizzard_server::server::signal::Signal;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
@@ -117,7 +118,7 @@ impl Client {
                     .read_until(b'\n', &mut buffer)
                     .expect("Could not read into buffer");
                 let json = str::from_utf8(&buffer).unwrap();
-                let players: Vec<Player> = serde_json::from_str(&json).unwrap();
+                let players: SharedState = serde_json::from_str(&json).unwrap();
                 println!("{:?}", players);
             }
         });

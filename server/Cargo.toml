@@ -13,3 +13,4 @@ rand = "0.8.4"
 
 uid = { path = "../uid" }
 blizzard-engine = { path = "../engine" }
+blizzard-engine_derive = { path = "../engine/engine_derive" }

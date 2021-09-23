@@ -1,10 +1,12 @@
 pub mod signal;
 
 mod connector;
-mod controller;
+pub mod controller;
 mod pool;
 
-use blizzard_engine as bz;
+use blizzard_engine::game::Game;
+use serde::Serialize;
+
 use pool::Pool;
 use std::io::{Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -12,11 +14,13 @@ use std::net::{TcpListener, TcpStream};
 pub struct Server {}
 
 impl Server {
-    pub fn new(port: i32, max_games: i32, max_players: i32) {
-        // Checking engine code runs here
-
+    pub fn new<T: Game<K>, K>(port: i32, max_games: i32, max_players: i32, game: T, shared_state: K)
+    where
+        T: Clone + Send + 'static,
+        K: Copy + Send + Serialize + 'static,
+    {
         // Create game pool
-        let game_pool = Pool::new(max_games, max_players);
+        let game_pool = Pool::new(max_games, max_players, game, shared_state);
 
         let tcp = format!("0.0.0.0:{}", port);
 

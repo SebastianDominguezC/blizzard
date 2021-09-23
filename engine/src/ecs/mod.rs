@@ -8,7 +8,7 @@ pub trait World {
 }
 
 // Entity definition
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EntityManager {
     entities: HashMap<u32, bool>,
 }
@@ -65,7 +65,7 @@ impl EntityManager {
 }
 
 // Component definition
-pub trait ComponentRegistry<T> {
+pub trait ComponentRegistry<T: Copy> {
     fn new() -> Self;
     fn add(&mut self, entity: u32, component: T);
     fn add_many(&mut self, entities: &Vec<u32>, component: T);

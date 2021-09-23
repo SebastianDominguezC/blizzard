@@ -1,3 +1,2 @@
-mod application;
-pub mod entry_point;
+pub mod application;
 mod logger;

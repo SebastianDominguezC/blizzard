@@ -6,12 +6,18 @@ mod tests {
     }
 }
 extern crate uid;
-mod core;
+pub mod core;
 pub mod ecs;
 pub mod game;
 
 use game::Game;
 
-pub fn start<T: Game>(game: T) {
-    core::entry_point::run(game);
+use crate::core::application::create_app;
+
+use std::sync::mpsc;
+
+pub fn start<T: Game<K>, K>(game: T, shared_state: K) {
+    let mut app = create_app(game, shared_state);
+    let (_, m_receiver) = mpsc::channel();
+    app.start(m_receiver);
 }
