@@ -16,9 +16,9 @@ mod tests {
 extern crate serde_derive;
 extern crate blizzard_engine;
 extern crate blizzard_engine_derive;
+extern crate blizzard_id;
 extern crate serde;
 extern crate serde_json;
-extern crate uid;
 
 // Entry point is in server
 mod game;

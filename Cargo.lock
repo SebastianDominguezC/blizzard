@@ -7,7 +7,7 @@ name = "blizzard-engine"
 version = "0.1.0"
 dependencies = [
  "blizzard-engine_derive",
- "uid",
+ "blizzard-id",
 ]
 
 [[package]]
@@ -19,16 +19,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "blizzard-id"
+version = "0.1.0"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "blizzard-server"
 version = "0.1.0"
 dependencies = [
  "blizzard-engine",
  "blizzard-engine_derive",
+ "blizzard-id",
  "rand",
  "serde",
  "serde_derive",
  "serde_json",
- "uid",
 ]
 
 [[package]]
@@ -179,13 +186,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
-]
-
-[[package]]
-name = "uid"
-version = "0.1.0"
-dependencies = [
- "rand",
 ]
 
 [[package]]

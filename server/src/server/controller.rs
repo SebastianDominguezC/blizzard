@@ -10,13 +10,13 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use uid::Uid;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use blizzard_engine::core::network_application::Application;
 use blizzard_engine::game::Game;
+use blizzard_id::Uid;
 
 use crate::game::Player;
 use crate::server::connector::Connector;

@@ -1,9 +1,16 @@
 [package]
-name = "uid"
+name = "blizzard-id"
 version = "0.1.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Sebastian Dominguez<joburg1035@yahoo.com>"]
+description = "A UID library, originally developed for the Blizzard Game Engine ❄️"
+readme = "README.md"
+homepage = "https://blizzard-engine.web.app"
+repository = "https://github.com/SebastianDominguezC/blizzard"
+license = "MIT"
+license-file ="LICENSE"
+keywords = ["game", "server", "TCP", "multiplayer"]
+categories = ["authentication", "uid"]
 
 [dependencies]
 rand = "0.8.3"

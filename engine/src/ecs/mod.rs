@@ -2,9 +2,9 @@
 //!
 //! The engine follows an ECS architecture.
 
+use blizzard_id::Uid;
 use std::collections::HashMap;
 use std::vec::Vec;
-use uid::Uid;
 
 /// World definition
 /// # Example

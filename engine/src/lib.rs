@@ -24,7 +24,7 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
-extern crate uid;
+extern crate blizzard_id;
 
 pub mod core;
 pub mod ecs;
