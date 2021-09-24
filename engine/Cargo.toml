@@ -2,9 +2,15 @@
 name = "blizzard-engine"
 version = "0.1.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Sebastian Doming uez<joburg1035@yahoo.com>"]
+description = "Blizzard Game Engine ❄️ is a modular ECS game engine"
+readme = "README.md"
+homepage = "https://blizzard-engine.web.app"
+repository = "https://github.com/SebastianDominguezC/blizzard"
+keywords = ["game", "game-engine", "engine"]
+categories = ["Game engines", "Game development"]
+license = "MIT"
 
 [dependencies]
-blizzard-id = { path = "../uid" }
-blizzard-engine_derive = { path = "./engine_derive" }
+blizzard-id = { path = "../uid", version = "0.1.0" }
+blizzard-engine_derive = { path = "./engine_derive", version = "0.1.0" }

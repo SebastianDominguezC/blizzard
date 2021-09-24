@@ -10,5 +10,6 @@ repository = "https://github.com/SebastianDominguezC/blizzard"
 keywords = ["id", "UID", "auth"]
 categories = ["authentication", "uid"]
 license = "MIT"
+
 [dependencies]
 rand = "0.8.3"
