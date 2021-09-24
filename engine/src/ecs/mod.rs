@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::vec::Vec;
 use uid::Uid;
 
-pub trait World {
+pub trait World<I> {
     fn new() -> Self;
-    fn run_systems(&mut self);
+    fn run_systems(&mut self, input: I);
 }
 
 // Entity definition
@@ -37,6 +37,13 @@ impl EntityManager {
             entities.push(entity);
         }
         entities
+    }
+
+    pub fn get_one(&self, entity: u32) -> Option<u32> {
+        match self.entities.get(&entity) {
+            Some(_) => Some(entity),
+            None => None,
+        }
     }
 
     pub fn get_all(&self) -> &HashMap<u32, bool> {

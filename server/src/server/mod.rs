@@ -1,26 +1,43 @@
-pub mod signal;
-
 mod connector;
 pub mod controller;
 mod pool;
 
 use blizzard_engine::game::Game;
-use serde::Serialize;
 
 use pool::Pool;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::io::{Error, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::mpsc::Receiver;
+use std::sync::{Arc, Mutex};
 
 pub struct Server {}
 
 impl Server {
-    pub fn new<T: Game<K>, K>(port: i32, max_games: i32, max_players: i32, game: T, shared_state: K)
-    where
+    pub fn new<'de, T: Game<K, I>, K, I, M>(
+        port: i32,
+        max_games: i32,
+        max_players: i32,
+        game: T,
+        shared_state: K,
+        input: I,
+        handle_input: &'static (dyn Fn(Receiver<M>, Arc<Mutex<I>>) -> I + Sync),
+    ) where
         T: Clone + Send + 'static,
-        K: Copy + Send + Serialize + 'static,
+        K: Clone + Send + Serialize + 'static,
+        I: Send + Copy,
+        M: Send + DeserializeOwned,
     {
         // Create game pool
-        let game_pool = Pool::new(max_games, max_players, game, shared_state);
+        let game_pool = Pool::new(
+            max_games,
+            max_players,
+            game,
+            shared_state,
+            input,
+            handle_input,
+        );
 
         let tcp = format!("0.0.0.0:{}", port);
 

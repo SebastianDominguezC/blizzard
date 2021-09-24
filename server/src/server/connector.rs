@@ -1,6 +1,9 @@
-use blizzard_engine::core::application::Application;
+use blizzard_engine::core::network_application::Application;
 use blizzard_engine::game::Game;
+
+use serde::de::DeserializeOwned;
 use serde::Serialize;
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -13,14 +16,17 @@ pub struct Connector {
 }
 
 impl Connector {
-    pub fn new<T: Game<K>, K>(
+    pub fn new<'de, T: Game<K, I>, K, I, M>(
         port: i32,
         max_players: i32,
-        app: Application<T, K>,
+        app: Application<T, K, I>,
+        handle_input: &'static (dyn Fn(Receiver<M>, Arc<Mutex<I>>) -> I + Sync),
     ) -> Arc<Mutex<Connector>>
     where
         T: Send + 'static,
         K: Send + Serialize + 'static,
+        I: Send + Copy,
+        M: Send + DeserializeOwned,
     {
         // Create game wrapper
         let game_connector = Connector {
@@ -38,7 +44,7 @@ impl Connector {
 
         builder
             .spawn(move || {
-                Controller::open_game_port(port, max_players, connector_clone, app);
+                Controller::open_game_port(port, max_players, connector_clone, handle_input, app);
             })
             .expect("Could not create thread");
 

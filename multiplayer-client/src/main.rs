@@ -1,13 +1,34 @@
-extern crate blizzard_server;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
-use blizzard_server::game::Position;
-use blizzard_server::server::controller::SharedState;
-use blizzard_server::server::signal::Signal;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;
-use std::sync::{Arc, Mutex};
 use std::thread;
+
+// Message definition
+#[derive(Serialize, Deserialize)]
+enum Message {
+    None,
+    W,
+    A,
+    S,
+    D,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SharedState {
+    counter: i32,
+    registry: Vec<Position>,
+}
 
 struct Client {}
 
@@ -68,44 +89,35 @@ impl Client {
         let mut stream = TcpStream::connect(tcp).expect("Could not connect to server");
         let stream_clone = stream.try_clone().unwrap();
 
-        let position = Arc::new(Mutex::new(Position::new()));
-        let position1 = Arc::clone(&position);
-
         // User Input
-        thread::spawn(move || {
-            let pos = Arc::clone(&position1);
-            loop {
-                let mut input = String::new();
+        thread::spawn(move || loop {
+            let mut input = String::new();
 
-                io::stdin()
-                    .read_line(&mut input)
-                    .expect("Failed to read from stdin");
-                let mut pos = pos.lock().unwrap();
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read from stdin");
 
-                let input = input.trim();
-                let data: Position;
+            let input = input.trim();
 
-                if input == "w" {
-                    data = Position::up();
-                } else if input == "a" {
-                    data = Position::left();
-                } else if input == "s" {
-                    data = Position::down();
-                } else if input == "d" {
-                    data = Position::right();
-                } else {
-                    data = Position::new();
-                }
-                *pos = data;
+            let mut data = Message::None;
 
-                let data = Signal::MovePlayer(*pos);
-                let json = serde_json::to_string(&data).unwrap() + "\n";
-
-                stream
-                    .write(json.as_bytes())
-                    .expect("Failed to write to server");
-                println!("data written");
+            if input == "w" {
+                data = Message::W;
+            } else if input == "a" {
+                data = Message::A;
+            } else if input == "s" {
+                data = Message::S;
+            } else if input == "d" {
+                data = Message::D;
             }
+
+            let json = serde_json::to_string(&data).unwrap() + "\n";
+            println!("{}", json);
+
+            stream
+                .write(json.as_bytes())
+                .expect("Failed to write to server");
+            println!("data written");
         });
 
         // Stream Reader
@@ -118,8 +130,8 @@ impl Client {
                     .read_until(b'\n', &mut buffer)
                     .expect("Could not read into buffer");
                 let json = str::from_utf8(&buffer).unwrap();
-                let players: SharedState = serde_json::from_str(&json).unwrap();
-                println!("{:?}", players);
+                let state: SharedState = serde_json::from_str(&json).unwrap();
+                println!("{:?}", state);
             }
         });
 

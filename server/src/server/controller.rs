@@ -1,10 +1,10 @@
 use crate::game::Player;
 use crate::server::connector::Connector;
-use crate::server::signal::Signal;
 
-use blizzard_engine::core::application::{Application, Message};
+use blizzard_engine::core::network_application::Application;
 use blizzard_engine::game::Game;
 
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::io::{BufRead, BufReader, Error, Write};
 use std::net::{TcpListener, TcpStream};
@@ -14,13 +14,8 @@ use std::time::Duration;
 use uid::Uid;
 
 use std::sync::mpsc;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-pub struct SharedState {
-    counter: i32,
-}
 
 pub struct Controller {
     port: i32,
@@ -39,14 +34,17 @@ impl Controller {
         }
     }
 
-    pub fn open_game_port<T: Game<K>, K>(
+    pub fn open_game_port<'de, T: Game<K, I>, K, I, M>(
         port: i32,
         max_players: i32,
         connector: Arc<Mutex<Connector>>,
-        mut app: Application<T, K>,
+        handle_input: &'static (dyn Fn(Receiver<M>, Arc<Mutex<I>>) -> I + Sync),
+        mut app: Application<T, K, I>,
     ) where
         T: Send + 'static,
         K: Send + Serialize + 'static,
+        I: Send + Copy,
+        M: Send + DeserializeOwned,
     {
         // Store port id
         let id = port;
@@ -68,7 +66,7 @@ impl Controller {
         let builder = thread::Builder::new().name(format!("App-thread-{}", id));
         builder
             .spawn(move || {
-                app.start(rx);
+                app.start(rx, handle_input);
             })
             .expect("Could not create thread");
 
@@ -106,7 +104,7 @@ impl Controller {
                             .name(format!("Game-{}-player-{}", id, player_id));
                         builder
                             .spawn(move || {
-                                Controller::handle_player_connection::<K>(
+                                Controller::handle_player_connection::<K, M>(
                                     stream,
                                     controller,
                                     player_id,
@@ -124,20 +122,22 @@ impl Controller {
         }
     }
 
-    pub fn handle_player_connection<K>(
+    pub fn handle_player_connection<'de, K, M>(
         stream: TcpStream,
         game: Arc<Mutex<Controller>>,
         id: usize,
-        sender: Sender<Message>,
+        sender: Sender<M>,
         shared_state: Arc<Mutex<K>>,
     ) -> Result<(), Error>
     where
         K: Send + Serialize + 'static,
+        M: Send + DeserializeOwned + 'static,
     {
         println!("Connecting player {} to game", id);
 
         let mut stream_clone = stream.try_clone().unwrap();
 
+        let sender = sender.clone();
         // Stream receiver
         thread::spawn(move || {
             loop {
@@ -162,20 +162,10 @@ impl Controller {
                 }
 
                 let json = str::from_utf8(&buffer).unwrap();
-                let signal: Signal = serde_json::from_str(&json.trim()).unwrap();
 
-                match signal {
-                    Signal::MovePlayer(pos) => {
-                        let sent = sender.send(Message::A);
-                        match sent {
-                            Ok(y) => {}
-                            Err(e) => {}
-                        }
-                    }
-                    _ => {
-                        println!("Some other game logic");
-                    }
-                }
+                let signal: M = serde_json::from_str(&json.trim()).unwrap();
+
+                sender.send(signal);
             }
         });
 

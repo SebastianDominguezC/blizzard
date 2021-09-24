@@ -11,6 +11,7 @@ use blizzard_engine_derive::ComponentRegistry;
 use blizzard_server::server::Server;
 
 use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
 // World definition
@@ -18,38 +19,27 @@ use std::sync::{Arc, Mutex};
 struct MyWorld {
     entity_manager: EntityManager,
     position: PositionRegistry,
-    counters: CounterRegistry,
-    others: OtherRegistry,
 }
 
-impl World for MyWorld {
+impl World<Input> for MyWorld {
     fn new() -> Self {
         Self {
             entity_manager: EntityManager::new(),
             position: PositionRegistry::new(),
-            counters: CounterRegistry::new(),
-            others: OtherRegistry::new(),
         }
     }
-    fn run_systems(&mut self) {
-        position_system(&mut self.position.components);
-        counter_system(&mut self.counters.components);
-        other_system(&mut self.others.components);
+    fn run_systems(&mut self, input: Input) {
+        position_system(&mut self.position.components, input);
     }
 }
 
 // Components
 #[derive(ComponentRegistry, Debug, Clone)]
-struct OtherRegistry {
-    components: HashMap<u32, i32>,
-}
-
-#[derive(ComponentRegistry, Debug, Clone)]
 struct PositionRegistry {
     components: HashMap<u32, Position>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 struct Position {
     x: i32,
     y: i32,
@@ -65,27 +55,10 @@ impl Position {
     }
 }
 
-#[derive(ComponentRegistry, Debug, Clone)]
-struct CounterRegistry {
-    components: HashMap<u32, i32>,
-}
-
 // Systems
-fn position_system(positions: &mut HashMap<u32, Position>) {
+fn position_system(positions: &mut HashMap<u32, Position>, input: Input) {
     for (_, position) in positions.iter_mut() {
-        position.displace(1, 1);
-    }
-}
-
-fn counter_system(counters: &mut HashMap<u32, i32>) {
-    for (_, counter) in counters.iter_mut() {
-        *counter += 2;
-    }
-}
-
-fn other_system(others: &mut HashMap<u32, i32>) {
-    for (_, other) in others.iter_mut() {
-        *other -= 1;
+        position.displace(input.x, input.y);
     }
 }
 
@@ -96,35 +69,26 @@ struct MyGame {
     counter: i32,
 }
 
-impl Game<SharedState> for MyGame {
+impl Game<SharedState, Input> for MyGame {
     fn world_config(&mut self) {
-        // Create Entities
-        let ent1 = self.world.entity_manager.create_entity();
-        let ent2 = self.world.entity_manager.create_entity();
-        let ent3 = self.world.entity_manager.create_entity();
-
-        // Add components
-        self.world.position.add(ent1, Position::new());
-        self.world.position.add(ent3, Position::new());
-
-        self.world.counters.add(ent2, 1);
-        self.world.counters.add(ent3, 1);
-
-        self.world.others.add(ent1, 0);
-
         // Create multiple entities
         let entities = self.world.entity_manager.create_n_entities(2);
 
         // Add components to many entities
-        self.world.counters.add_many(&entities, 1);
         self.world.position.add_many(&entities, Position::new());
     }
 
-    fn update(&mut self, input: i32, shared_state: Arc<Mutex<SharedState>>) {
-        println!("World input: {}", input);
-        self.world.run_systems();
+    fn update(&mut self, input: Input, shared_state: Arc<Mutex<SharedState>>) {
+        self.world.run_systems(input);
         self.counter += 1;
-        shared_state.lock().unwrap().counter = input;
+        shared_state.lock().unwrap().counter = input.x;
+        shared_state.lock().unwrap().registry = self
+            .world
+            .position
+            .components
+            .iter()
+            .map(|(_, lol)| *lol)
+            .collect();
     }
 
     fn render(&mut self) {}
@@ -143,22 +107,91 @@ fn new_game(world: MyWorld) -> MyGame {
 }
 
 // Shared state definition
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-pub struct SharedState {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct SharedState {
     counter: i32,
+    registry: Vec<Position>,
 }
 
 impl SharedState {
     pub fn new(counter: i32) -> Self {
-        Self { counter }
+        Self {
+            counter,
+            registry: vec![],
+        }
     }
+}
+
+// Input definition
+#[derive(Debug, Clone, Copy)]
+struct Input {
+    x: i32,
+    y: i32,
+}
+impl Input {
+    fn new() -> Self {
+        Self { x: 0, y: 0 }
+    }
+    fn displace(&mut self, x: i32, y: i32) {
+        self.x += x;
+        self.y += y;
+    }
+}
+
+// Message definition
+#[derive(Serialize, Deserialize)]
+enum Message {
+    None,
+    W,
+    A,
+    S,
+    D,
+}
+
+fn handle_client_message(receiver: Receiver<Message>, input: Arc<Mutex<Input>>) -> Input {
+    for message in receiver {
+        match message {
+            Message::None => {
+                input.lock().unwrap().displace(0, 0);
+            }
+            Message::W => {
+                input.lock().unwrap().displace(0, 1);
+            }
+            Message::A => {
+                input.lock().unwrap().displace(-1, 0);
+            }
+            Message::S => {
+                input.lock().unwrap().displace(0, -1);
+            }
+            Message::D => {
+                input.lock().unwrap().displace(1, 0);
+            }
+        }
+    }
+    Input::new()
 }
 
 // Main function
 fn main() {
+    let port = 8888;
+    let max_games = 4;
+    let max_players = 2;
     let world = MyWorld::new();
-    let game = new_game(world);
+
     let shared_state = SharedState::new(0);
 
-    Server::new(8888, 4, 2, game, shared_state);
+    let game = new_game(world);
+    // The data that a client message will manipulate
+    let input_type = Input::new();
+    let hanlde_input = &handle_client_message;
+
+    Server::new(
+        port,
+        max_games,
+        max_players,
+        game,
+        shared_state,
+        input_type,
+        hanlde_input,
+    );
 }
