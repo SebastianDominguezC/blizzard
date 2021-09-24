@@ -1,3 +1,4 @@
+// TODO: NOT NETWORKED APP
 // use crate::core::logger::initialize_logging;
 // use crate::game::Game;
 

@@ -1,16 +1,41 @@
+//! # UID crate
+//! This crate is utility crate to create unique identifications.
+//!
+//! Crate originally developed for the Blizzard Game and Server engines.
+
 #[cfg(test)]
 mod tests {
+    use crate::Uid;
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test() {
+        let id = Uid::new_numerical(2);
+        println!("{}", id);
+        assert!(id < 100);
+        assert!(id >= 0);
     }
 }
 
 use rand::{thread_rng, Rng};
 
+/// UID struct that has different UID implementations.
+///
+/// # Example
+/// ```
+/// let id = uid::Uid::new_numerical(1);
+/// assert!(id < 10);
+/// assert!(id >= 0);
+/// ```
 pub struct Uid {}
 
 impl Uid {
+    /// Make a numerical uid with size = length
+    ///
+    /// # Example
+    /// ```
+    /// let id = uid::Uid::new_numerical(2);
+    /// assert!(id < 100);
+    /// assert!(id >= 0);
+    /// ```
     pub fn new_numerical(length: u32) -> u32 {
         let mut id = 0;
         for i in 0..length {

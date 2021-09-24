@@ -1,34 +1,12 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
+extern crate example;
 
+use example::Message;
+use example::SharedState;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{Shutdown, TcpStream};
 use std::str;
+use std::sync::{Arc, Mutex};
 use std::thread;
-
-// Message definition
-#[derive(Serialize, Deserialize)]
-enum Message {
-    None,
-    W,
-    A,
-    S,
-    D,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-struct Position {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SharedState {
-    counter: i32,
-    registry: Vec<Position>,
-}
 
 struct Client {}
 
@@ -89,35 +67,51 @@ impl Client {
         let mut stream = TcpStream::connect(tcp).expect("Could not connect to server");
         let stream_clone = stream.try_clone().unwrap();
 
+        let data = Message::AddPlayer;
+        let json = serde_json::to_string(&data).unwrap() + "\n";
+
+        let should_close = Arc::new(Mutex::new(false));
+        let should_close_copy = Arc::clone(&should_close);
+
+        stream
+            .write(json.as_bytes())
+            .expect("Failed to write to server");
+        println!("data written");
+
         // User Input
-        thread::spawn(move || loop {
-            let mut input = String::new();
+        thread::spawn(move || {
+            let shoud_close = should_close_copy;
 
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Failed to read from stdin");
+            loop {
+                let mut input = String::new();
 
-            let input = input.trim();
+                io::stdin()
+                    .read_line(&mut input)
+                    .expect("Failed to read from stdin");
 
-            let mut data = Message::None;
+                let input = input.trim();
 
-            if input == "w" {
-                data = Message::W;
-            } else if input == "a" {
-                data = Message::A;
-            } else if input == "s" {
-                data = Message::S;
-            } else if input == "d" {
-                data = Message::D;
+                let mut data = Message::None;
+
+                if input == "w" {
+                    data = Message::W;
+                } else if input == "a" {
+                    data = Message::A;
+                } else if input == "s" {
+                    data = Message::S;
+                } else if input == "d" {
+                    data = Message::D;
+                } else if input == "close" {
+                    data = Message::RemovePlayer;
+                    *shoud_close.lock().unwrap() = true;
+                }
+
+                let json = serde_json::to_string(&data).unwrap() + "\n";
+
+                stream
+                    .write(json.as_bytes())
+                    .expect("Failed to write to server");
             }
-
-            let json = serde_json::to_string(&data).unwrap() + "\n";
-            println!("{}", json);
-
-            stream
-                .write(json.as_bytes())
-                .expect("Failed to write to server");
-            println!("data written");
         });
 
         // Stream Reader
@@ -136,7 +130,11 @@ impl Client {
         });
 
         // Keep thread alive, so TCP connection on other threads doesn't reset
-        loop {}
+        loop {
+            if *should_close.lock().unwrap() {
+                return;
+            }
+        }
     }
 }
 

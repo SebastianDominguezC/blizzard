@@ -1,24 +1,42 @@
-use crate::server::connector::Connector;
-use blizzard_engine::core::network_application::create_app;
-use blizzard_engine::game::Game;
+//! # Pool
+//! The pool is in charge of finding emtpy games to connect the client.
 
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
+use blizzard_engine::core::network_application::create_app;
+use blizzard_engine::game::Game;
+
+use crate::server::connector::Connector;
+
+/// A pool of game connectors
+/// Pool finds empty games and returns to the client empty game port.
+/// # Example
+/// For a working example, please see official github repository, in the example lib.
+///
 pub struct Pool {
     game_connectors: Vec<Arc<Mutex<Connector>>>,
 }
 
 impl Pool {
-    pub fn new<'de, T: Game<K, I>, K, I, M>(
+    /// Creates a new game.
+    /// # Type definitions:
+    /// * T: Game type
+    /// * K: Shared state type (to share state to client)
+    /// * I: Input type (to manipulate user input inside app)
+    /// * M: Message type (sent from server to app)
+    pub fn new<T: Game<K, I>, K, I, M>(
         max_games: i32,
         max_players: i32,
         game: T,
         shared_state: K,
         input: I,
-        handle_input: &'static (dyn Fn(Receiver<M>, Arc<Mutex<I>>) -> I + Sync),
+        handle_input: &'static (dyn Fn(Receiver<(M, usize)>, Arc<Mutex<I>>) -> I + Sync),
+        send_data_rate: i32,
+        game_update_rate: i32,
     ) -> Pool
     where
         T: Clone + Send + 'static,
@@ -35,16 +53,23 @@ impl Pool {
             let port = 7000 + i;
 
             // Create a new app for each port specified
-            let app = create_app(game.clone(), shared_state.clone(), input);
+            let app = create_app(game.clone(), shared_state.clone(), input, game_update_rate);
 
-            // Push game connector
-            game_connectors.push(Connector::new(port, max_players, app, handle_input));
+            // Push new game connector
+            game_connectors.push(Connector::new(
+                port,
+                max_players,
+                app,
+                handle_input,
+                send_data_rate,
+            ));
         }
 
         // Return game pool
         Pool { game_connectors }
     }
 
+    /// Finds an empty game and returns the port if there is an empty game
     pub fn find_empty_game(&self) -> Option<i32> {
         for game_connector in &self.game_connectors {
             let game_connector = game_connector.lock().unwrap();

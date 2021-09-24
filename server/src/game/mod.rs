@@ -1,5 +1,6 @@
-mod player;
-mod position;
+//! # Game module
+//!
+//! This module is for standard game properties.
 
+mod player;
 pub use player::Player;
-pub use position::Position;

@@ -1,23 +1,32 @@
-use crate::game::Player;
-use crate::server::connector::Connector;
+//! # Controller
+//! The controller is in charge of opening the game ports and handling client connections to games.
+//! It opens threads per client.
+//! Each client has a receiver and a sender thread.
 
-use blizzard_engine::core::network_application::Application;
-use blizzard_engine::game::Game;
-
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use std::io::{BufRead, BufReader, Error, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str;
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use uid::Uid;
 
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
+use blizzard_engine::core::network_application::Application;
+use blizzard_engine::game::Game;
+
+use crate::game::Player;
+use crate::server::connector::Connector;
+
+/// # Functionality:
+/// * Connection controller
+/// * Provides information to connector
+/// * Handles client connections to the game
 pub struct Controller {
+    // Waiting for future use
     port: i32,
     connector: Arc<Mutex<Connector>>,
     players: Vec<Player>,
@@ -25,6 +34,7 @@ pub struct Controller {
 }
 
 impl Controller {
+    /// Create a new controller from a connector
     fn new(port: i32, max_players: i32, connector: Arc<Mutex<Connector>>) -> Controller {
         Controller {
             players: vec![],
@@ -34,12 +44,18 @@ impl Controller {
         }
     }
 
+    /// What it does:
+    /// * Runs a game (application).
+    /// * Creates messaging channel between controller and app.
+    /// * Creates a shared state to share between app and client.
+    /// * Opens a port for game.
     pub fn open_game_port<'de, T: Game<K, I>, K, I, M>(
         port: i32,
         max_players: i32,
         connector: Arc<Mutex<Connector>>,
-        handle_input: &'static (dyn Fn(Receiver<M>, Arc<Mutex<I>>) -> I + Sync),
+        handle_input: &'static (dyn Fn(Receiver<(M, usize)>, Arc<Mutex<I>>) -> I + Sync),
         mut app: Application<T, K, I>,
+        send_data_rate: i32,
     ) where
         T: Send + 'static,
         K: Send + Serialize + 'static,
@@ -110,6 +126,7 @@ impl Controller {
                                     player_id,
                                     sender,
                                     shared_state,
+                                    send_data_rate,
                                 )
                                 .unwrap_or_else(|error| eprintln!("{:?}", error));
                             })
@@ -122,24 +139,30 @@ impl Controller {
         }
     }
 
+    /// Handles player writing and reading
     pub fn handle_player_connection<'de, K, M>(
         stream: TcpStream,
         game: Arc<Mutex<Controller>>,
         id: usize,
-        sender: Sender<M>,
+        sender: Sender<(M, usize)>,
         shared_state: Arc<Mutex<K>>,
+        send_data_rate: i32,
     ) -> Result<(), Error>
     where
         K: Send + Serialize + 'static,
         M: Send + DeserializeOwned + 'static,
     {
         println!("Connecting player {} to game", id);
-
         let mut stream_clone = stream.try_clone().unwrap();
-
         let sender = sender.clone();
-        // Stream receiver
+
+        // Defines bool for dropping the thread on disconnection
+        let drop_thread = Arc::new(Mutex::new(false));
+        let drop_copy = Arc::clone(&drop_thread);
+
+        // Stream receiver: Read from client
         thread::spawn(move || {
+            let drop = drop_copy;
             loop {
                 let mut buffer: Vec<u8> = Vec::new();
                 let mut reader = BufReader::new(&stream);
@@ -148,41 +171,58 @@ impl Controller {
                     .expect("Could not read into buffer");
                 let bytes_read = buffer.len();
 
-                // On stream input, aquire game lock and move player
+                // On stream input, get lock and aquire player id
                 let mut game = game.lock().unwrap();
-
-                // Get data from game
                 let player_index = game.players.iter().position(|p| p.id == id).unwrap();
 
                 // If no bytes end connection
                 if bytes_read == 0 {
+                    // Remove player
                     game.connector.lock().unwrap().remove_player();
                     game.remove_player(player_index);
+
+                    // Mark thread for dropping
+                    *drop.lock().unwrap() = true;
                     break;
                 }
 
+                // Parse message and send to app
                 let json = str::from_utf8(&buffer).unwrap();
-
                 let signal: M = serde_json::from_str(&json.trim()).unwrap();
 
-                sender.send(signal);
+                match sender.send((signal, id)) {
+                    Ok(_) => {}
+                    Err(_) => println!("Could not send signal to app."),
+                }
             }
         });
 
-        // Stream sender
+        // Stream sender: write to client
         thread::spawn(move || {
+            // 1000 / millis = frames per sec
+            // millis = 1000 / frames_per_sec
+            let sleep_time: u64 = (1000 / send_data_rate) as u64;
+
+            // Client event loop
             loop {
-                thread::sleep(Duration::from_millis(1000));
+                thread::sleep(Duration::from_millis(sleep_time));
 
                 // On stream input, aquire shared state lock
                 let reduced_state = shared_state.lock().unwrap();
-
                 let serialized = serde_json::to_string(&*reduced_state);
 
+                // Send state to client
                 if let Ok(s) = serialized {
-                    // Write back to stream
                     let s = s + "\n";
-                    stream_clone.write(s.as_bytes());
+                    match stream_clone.write(s.as_bytes()) {
+                        Ok(_) => {}
+                        Err(_) => println!("Could not send data to client."),
+                    }
+                }
+
+                // Drop thread when client disconnects
+                if *drop_thread.lock().unwrap() {
+                    break;
                 }
             }
         });
@@ -190,6 +230,7 @@ impl Controller {
         return Ok(());
     }
 
+    /// Add a player to the game
     pub fn add_player(&mut self) -> (bool, usize) {
         if self.players.len() < self.max_players as usize {
             let id = Uid::new_numerical(4) as usize;
@@ -200,6 +241,7 @@ impl Controller {
         (false, 0)
     }
 
+    /// Remove a player from the game
     pub fn remove_player(&mut self, index: usize) -> bool {
         if self.players.len() == 0 {
             return false;

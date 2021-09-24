@@ -1,3 +1,7 @@
+//! # Blizzard Engine Macros
+//!
+//! This crate is for derivative macros for the blizzard engine, to reduce code duplication and make the engine easier for users.
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -13,6 +17,7 @@ use quote::quote;
 use syn;
 use syn::{Data, DeriveInput, Fields};
 
+/// Get the type of values in a hash map
 macro_rules! hash_map_value_type {
     ($x:expr) => {{
         let s = $x
@@ -32,11 +37,13 @@ macro_rules! hash_map_value_type {
 }
 
 #[proc_macro_derive(ComponentRegistry)]
+/// Macro for generating a component registry
 pub fn component_registry_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).expect("Could not parse code");
     impl_component_registry(&ast)
 }
 
+/// Try creating a ComponentRegistry from derivation
 fn impl_component_registry(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let mut gen = None;

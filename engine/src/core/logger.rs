@@ -1,4 +1,10 @@
-// warn - trace are optional
+//! # Logger
+//!
+//! A custom logger for all important information, still in development.
+
+use LogLevel::{Debug, Error, Fatal, Info, Trace, Warn};
+
+/// Log Level definition
 enum LogLevel {
     Fatal,
     Error,
@@ -8,13 +14,13 @@ enum LogLevel {
     Trace,
 }
 
-use LogLevel::{Debug, Error, Fatal, Info, Trace, Warn};
-
+/// Logger: Printing
 fn log(color: &str, code: &str, message: String) {
     println!("{}{}: {}\n", color, code, message);
     println!("\x1b[1;37m");
 }
 
+/// Output handler
 fn log_output(log_level: LogLevel, message: String) {
     match log_level {
         Fatal => {
@@ -62,16 +68,18 @@ pub fn trace(message: String) {
     log_output(Trace, message);
 }
 
+/// Start logging with examples
 pub fn initialize_logging() {
     // TODO: create log file
-    fatal("Fatal stuff".to_string());
-    error("Error stuff".to_string());
-    warn("Warning stuff".to_string());
-    info("Info stuff".to_string());
-    debug("Debug stuff".to_string());
-    trace("Trace stuff".to_string());
+    fatal("Fatal example".to_string());
+    error("Error example".to_string());
+    warn("Warning example".to_string());
+    info("Info example".to_string());
+    debug("Debug example".to_string());
+    trace("Trace example".to_string());
 }
 
+/// Ends logger
 pub fn shutdown() {
     // TODO: clean up logging/write
 }

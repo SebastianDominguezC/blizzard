@@ -2,9 +2,8 @@
 
 members = [
     "server",
-    "multiplayer-server",
-    "multiplayer-client",
     "uid",
     "engine",
     "engine/engine_derive",
+    "example",
 ]
