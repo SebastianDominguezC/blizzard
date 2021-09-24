@@ -1,80 +1,112 @@
-# TCP-Multiplayer-Server
+# ❄️ Blizzard ❄️
 
-A tcp multiplayer server + client Rust workspace
+This is the official Blizzard Game Engine and Server Engine repository!
 
-## Summary
+This repository is a workspace of all the Blizzard libraries, to develop and publish them in an efficient way.
+This is not a full fledged proyect. As of now, the game engine is just an ECS data/game engine.
+Only basic data-driven games without rendering and extreme features can be made with this engine.
+The server uses this data engine in order to provide an authorative client-server architecture.
+The code is open for anyone who wants to tweak the proyect and improve it for their own needs,
+however this is a personal proyect and no contributions will be accepted (this will likely change in the future).
 
-This is a workspace for developing a TCP server for a multiplayer game.
+## Origin
 
-There are two main folders, the server and client
+This proyect started as my curiosity to develop a multiplayer game. I ended up deciding to write my own game server using Rust.
+After some succesfull connections and data passing between threads, I realised that the server needed a game engine in order to implement
+an authorative client-server achitecture. This gave birth to the Blizzard Game Engine and Server Engine! If you are curious
+about my learning process and development process, please enter the `development process` section in the website.
 
-This repo is in development, it will support abstractions for later reuse and customization!
+## Example
 
-There will also be a section on how to Dockerize the server, and upload it to AWS EC2
+A simple example of using the game engine with the server is in the `example` folder.
+It is a library with two binaries. To try the example run the following in your terminal:
 
-Feel free to open issues to suggest improvements!
-
-## TCP Server
-
-The TCP server for the multiplayer game
-
-This is a TCP server for a multiplayer game.
-
-The server runs 24 games in different threads that listen to different ports.
-
-Each game can contain up to 2 players.
-
-When a client connects to the main server, the Game Pool looks for an available game.
-
-It then returns the port number of that address.
-
-The client (more on this later) will then connect to the game on its corresponding port.
-
-The client side app simply sends automatic messages, where the server simply updates the user position a simple movement.
-
-** The server can be configured for however many games needed with as many players per game as needed **
-
-#### To run server
+Start server:
 
 ```
-cargo run -p "multiplayer-server"
-```
-
-You can also build the workspace first, then run the package:
-
-```
+cd example
 cargo build
-cargo run -p "multiplayer-server"
+cargo run --bin server
 ```
 
-## TCP client
-
-This client connects to the running TCP game server
-
-A message must be written to the server (a simple std input) to receive a port to join an available game
-
-Once joined, automatic messages are sent where the server updates the player position
-
-All position changes are logged on the tcp multiplayer server (here no changes are reflected)
-
-#### To run client
-
-Make sure to be running the multiplayer-server first!
+In a new terminal, start a client:
 
 ```
-cargo run -p "multiplayer-client"
+cd example
+cargo run --bin client
 ```
 
-You can also build the workspace first, then run the package:
+The server opens up 4 games, each with a unique TCP port. The server handles client connections/disconnections.
+
+When running the client, you have to enter a username (which is not used, oops).
+After that, the terminal will print the shared state definied by the server.
+On the terminal, you can update your player's position by entering any of the following:
 
 ```
-cargo build
-cargo run -p "multiplayer-client"
+w
+a
+s
+d
+close
 ```
 
-## Development road
+`Close` is for disconnecting.
 
-- A modular Game Engine that supports networking
-- ECS system
-- Server can run game engine parts
-- Client can run full game engine parts as needed
+If you run another client, it will join the game of the first client!
+If you run a 3rd client, it will join another game port, since the server is definied with a max player capacity of 2.
+You can continue to run clients, until the server is full!
+
+Please read over the code to fully understand what is going on!
+
+## Blizzard overview
+
+### ❄️ Blizzard Server Engine ❄️
+
+The server has the objective to be an authorative server that supports TCP and UDP multiplayer games.
+As of now it only supports TCP games.
+The server is inside the `server` folder. The server provides the server struct, where one can start a server:
+
+```
+Server::new(...)
+```
+
+The proyect is developed with generics, allowing full flexibility for users to develop their own games with many data structures.
+The example highlights a basic implementation.
+See the website section `learn` to better understand how to develop your own multiplayer games!
+
+#### Roadmap
+
+Some features that are considered for the future:
+
+- UDP application support
+- Cheating prevention
+- Better error handling
+- Performance improvements / diagnostics
+- AI/ML enhancements
+- Extensive logging
+
+### ❄️ Blizzard Game Engine ❄️
+
+The game engine is meant to be a stand-alone ECS game engine that can be used modularily, meaning
+a user can only use the parts that are required. As of now, it only supports a network application
+that uses ECS architecture for it's data, as the original proyect was focused on running a multiplayer game.
+The game engine is inside the `engine` folder.
+
+As of now, it is only a data/game engine.
+
+See the website section `learn` to better understand how to develop your own games (not necessarily multiplayer)!
+
+#### Roadmap
+
+Some features that are considered for the future:
+
+- Multiplatform-support (Windows and iOS)
+- Window abstractions
+- Renderer API
+- Event handler
+- Better logging
+- AI/ML functionalities
+- Performance improvements
+- Ready ECS Components like physics
+- Math and Physics libraries
+- Sound support
