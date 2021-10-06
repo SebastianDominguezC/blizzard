@@ -6,4 +6,5 @@ members = [
     "engine",
     "engine/engine_derive",
     "example",
+    "math",
 ]
