@@ -1,5 +1,5 @@
-// extern crate blizzard_engine;
-// extern crate blizzard_engine_derive;
+extern crate blizzard_engine;
+extern crate blizzard_engine_derive;
 
 // use blizzard_engine::ecs::{ComponentRegistry, EntityManager, World};
 // use blizzard_engine::game::Game;
@@ -139,5 +139,5 @@
 // }
 
 fn main() {
-    println!("LOL");
+    blizzard_engine::core::windows::main();
 }
