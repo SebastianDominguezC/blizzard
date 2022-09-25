@@ -2,6 +2,14 @@
 name = "math"
 version = "0.1.0"
 edition = "2018"
+authors = ["Sebastian Dominguez<joburg1035@yahoo.com>"]
+description = "Blizzard Server Engine ❄️ is a solution for a TCP multiplayer server"
+readme = "README.md"
+homepage = "https://blizzard-engine.web.app"
+repository = "https://github.com/SebastianDominguezC/blizzard"
+keywords = ["numerics", "mathematics", "math"]
+categories = ["Mathematics"]
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

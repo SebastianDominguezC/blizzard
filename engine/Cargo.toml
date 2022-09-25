@@ -2,7 +2,7 @@
 name = "blizzard-engine"
 version = "0.1.0"
 edition = "2018"
-authors = ["Sebastian Doming uez<joburg1035@yahoo.com>"]
+authors = ["Sebastian Dominguez<joburg1035@yahoo.com>"]
 description = "Blizzard Game Engine ❄️ is a modular ECS game engine"
 readme = "README.md"
 homepage = "https://blizzard-engine.web.app"
